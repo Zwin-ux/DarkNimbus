@@ -1,0 +1,45 @@
+openapi: 3.0.0
+info:
+  title: Discord Social SDK Wrapper API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Get service and SDK health status
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  sdk:
+                    type: string
+  /link_account:
+    post:
+      summary: Start Discord account linking
+      responses:
+        '202':
+          description: Linking started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id:
+                    type: string
+                  status:
+                    type: string
+  /subscribe_events:
+    get:
+      summary: WebSocket endpoint for async events
+      description: |
+        Upgrade to WebSocket to receive async events (request completion, errors, etc.)
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket)
