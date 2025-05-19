@@ -1,4 +1,5 @@
 # Nimbus8: Unified Gaming & Community Platform
+![image](https://github.com/user-attachments/assets/f78bd7f4-0da0-4bd3-a7e9-83c97688826b)
 
 Nimbus8 provides seamless integration between gaming platforms and social/streaming services, starting with Discord, Twitch, and now Minecraft Bedrock Edition. Our platform enables players to connect, communicate, and collaborate across platforms with enhanced social features.
 
