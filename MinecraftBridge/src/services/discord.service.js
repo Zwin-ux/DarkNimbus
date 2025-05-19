@@ -23,6 +23,7 @@ class DiscordService {
   constructor(ioInstance) {
     this.io = ioInstance;
     this.connectedUsers = new Map();
+    this.minecraftCommandPrefix = process.env.MINECRAFT_COMMAND_PREFIX || '!mc'; // Command prefix
     if (process.env.DISCORD_BOT_TOKEN) {
       this.discordApiClient = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
       logger.info('DiscordService initialized with Bot Token.');
@@ -79,12 +80,20 @@ class DiscordService {
    */
   handleSendCommandToMinecraft(socket, data) {
     const userId = socket.user?.userId;
-    logger.info(`User ${userId} wants to send command '${data.command}' to Minecraft.`);
+    const username = socket.user?.username || 'DiscordUser'; // Get username from JWT
+
+    if (!data.command) {
+      logger.warn(`User ${userId} (Discord: ${username}) tried to send an empty command to Minecraft.`, data);
+      // Optionally, send an error back to the client socket
+      // socket.emit('discord:command_error', { message: 'Command cannot be empty.' });
+      return;
+    }
+
+    logger.info(`User ${userId} (Discord: ${username}) sending structured command '${data.command}' to Minecraft.`);
     
-    // Here, you would typically call a method on MinecraftService
-    // For now, we'll emit an event that src/index.js can listen for or directly call minecraftService if passed in.
     this.io.emit('bridge:command_to_minecraft_from_discord', {
         sourceUserId: userId,
+        discordUsername: username, // Include Discord username
         command: data.command,
         payload: data.payload,
         targetAddonId: data.targetAddonId,
@@ -118,17 +127,48 @@ class DiscordService {
    */
   handleSendChatToMinecraft(socket, data) {
     const userId = socket.user?.userId;
-    // const username = socket.user?.username || 'DiscordUser'; // Assuming username is in JWT
-    logger.info(`User ${userId} sending chat to Minecraft: "${data.message}"`);
+    const username = socket.user?.username || 'DiscordUser'; // Get username from JWT
 
-    this.io.emit('bridge:chat_to_minecraft_from_discord', {
-        sourceUserId: userId,
-        // discordUsername: username,
-        message: data.message,
-        targetAddonId: data.targetAddonId,
-        targetWorld: data.targetWorld,
-        timestamp: new Date().toISOString()
-    });
+    if (!data.message || typeof data.message !== 'string') {
+        logger.warn(`User ${userId} (Discord: ${username}) sent invalid chat data to Minecraft.`, data);
+        return;
+    }
+
+    const messageContent = data.message.trim();
+    const commandPrefixWithSpace = this.minecraftCommandPrefix + ' ';
+
+    if (messageContent.startsWith(commandPrefixWithSpace)) {
+        // This is a command
+        const commandString = messageContent.substring(commandPrefixWithSpace.length).trim();
+        const [command, ...argsArr] = commandString.split(' ');
+        const args = argsArr.join(' '); // Pass arguments as a single string
+
+        if (command) {
+            logger.info(`User ${userId} (Discord: ${username}) sending chat command '${command}' with args '${args}' to Minecraft.`);
+            this.io.emit('bridge:command_to_minecraft_from_discord', {
+                sourceUserId: userId,
+                discordUsername: username,
+                command: command,
+                payload: { arguments: args }, // Minecraft addon can parse this string
+                targetAddonId: data.targetAddonId,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            logger.warn(`User ${userId} (Discord: ${username}) sent an empty command after prefix: ${messageContent}`);
+            // Optionally send feedback to user: socket.emit('discord:command_error', { message: 'Empty command after prefix.' });
+        }
+    } else {
+        // This is a plain chat message
+        logger.info(`User ${userId} (Discord: ${username}) sending chat to Minecraft: "${messageContent}"`);
+        this.io.emit('bridge:chat_to_minecraft_from_discord', {
+            sourceUserId: userId,
+            discordUsername: username, // Include Discord username
+            message: messageContent,
+            targetAddonId: data.targetAddonId,
+            targetWorld: data.targetWorld,
+            timestamp: new Date().toISOString()
+        });
+    }
   }
 
   /**

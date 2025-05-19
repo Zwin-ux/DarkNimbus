@@ -8,6 +8,7 @@ import { logger } from './utils/logger.js';
 import { socketAuthMiddleware } from './middleware/socketAuth.middleware.js';
 import { MinecraftService } from './services/minecraft.service.js';
 import { DiscordService } from './services/discord.service.js';
+import authRouter from './routes/auth.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -108,6 +109,78 @@ io.on('bridge:command_to_minecraft_from_discord', (data) => {
   }
 });
 
+// Handle player join events from Minecraft
+io.on('bridge:minecraft_player_join', (data) => {
+  const channelId = process.env.CHAT_RELAY_DISCORD_CHANNEL_ID; // Or a dedicated announcements channel
+  if (channelId && data.playerName) {
+    const worldInfo = data.world ? ` (World: ${data.world})` : '';
+    const message = `✅ **${data.playerName}** joined the Minecraft server${worldInfo}.`;
+    discordService.sendChannelMessage(channelId, message)
+      .catch(err => logger.error(`Failed to announce MC player join to Discord: ${err.message}`));
+  } else {
+    logger.warn('Cannot announce MC player join: Missing channel ID or player name.', data);
+  }
+});
+
+// Handle player leave events from Minecraft
+io.on('bridge:minecraft_player_leave', (data) => {
+  const channelId = process.env.CHAT_RELAY_DISCORD_CHANNEL_ID;
+  if (channelId && data.playerName) {
+    const worldInfo = data.world ? ` (World: ${data.world})` : '';
+    const reasonInfo = data.reason ? ` (Reason: ${data.reason})` : '';
+    const message = `👋 **${data.playerName}** left the Minecraft server${worldInfo}${reasonInfo}.`;
+    discordService.sendChannelMessage(channelId, message)
+      .catch(err => logger.error(`Failed to announce MC player leave to Discord: ${err.message}`));
+  } else {
+    logger.warn('Cannot announce MC player leave: Missing channel ID or player name.', data);
+  }
+});
+
+// Handle player death events from Minecraft
+io.on('bridge:minecraft_player_death', (data) => {
+  const channelId = process.env.CHAT_RELAY_DISCORD_CHANNEL_ID;
+  if (channelId && data.playerName) {
+    const worldInfo = data.world ? ` (World: ${data.world})` : '';
+    let message = `💀 **${data.playerName}** died${worldInfo}.`;
+    if(data.deathMessage) {
+        message = `💀 ${data.deathMessage.replace(data.playerName, `**${data.playerName}**`)}${worldInfo}`;
+    } else if (data.killer) {
+        message = `💀 **${data.playerName}** was slain by **${data.killer}**${worldInfo}.`;
+    }
+    discordService.sendChannelMessage(channelId, message)
+      .catch(err => logger.error(`Failed to announce MC player death to Discord: ${err.message}`));
+  } else {
+    logger.warn('Cannot announce MC player death: Missing channel ID or player name.', data);
+  }
+});
+
+// Handle achievement unlocked events from Minecraft
+io.on('bridge:minecraft_achievement_unlocked', (data) => {
+  const channelId = process.env.CHAT_RELAY_DISCORD_CHANNEL_ID;
+  if (channelId && data.playerName && data.achievementName) {
+    const worldInfo = data.world ? ` (World: ${data.world})` : '';
+    const description = data.achievementDescription ? ` (${data.achievementDescription})` : '';
+    const message = `🏆 **${data.playerName}** unlocked achievement: **${data.achievementName}**${description}${worldInfo}!`;
+    discordService.sendChannelMessage(channelId, message)
+      .catch(err => logger.error(`Failed to announce MC achievement to Discord: ${err.message}`));
+  } else {
+    logger.warn('Cannot announce MC achievement: Missing channel ID, player name, or achievement name.', data);
+  }
+});
+
+// Handle custom/generic Minecraft events
+io.on('bridge:minecraft_custom_event', (data) => {
+    const channelId = process.env.CHAT_RELAY_DISCORD_CHANNEL_ID; // Or a dedicated debug/event channel
+    if (channelId && data.eventType && data.payload) {
+        const message = `[MC Custom Event/${data.eventType}${data.world ? '/' + data.world : ''}] ${JSON.stringify(data.payload)}`;
+        // Keep custom event messages more raw, or format as needed
+        discordService.sendChannelMessage(channelId, message)
+            .catch(err => logger.error(`Failed to relay MC custom event to Discord: ${err.message}`));
+    } else {
+        logger.warn('Cannot relay MC custom event: Missing channel ID, event type, or payload.', data);
+    }
+});
+
 // Example: Handle request for Minecraft info from Discord
 io.on('bridge:request_minecraft_info_from_discord', async (data) => {
   logger.info(`Received request for MC info from Discord user ${data.sourceUserId}: ${data.requestType}`);
@@ -122,6 +195,9 @@ io.on('bridge:request_minecraft_info_from_discord', async (data) => {
   // if (requestingUserSocket) requestingUserSocket.emit('minecraft:info_response', { type: data.requestType, data: playerList });
 });
 
+
+// API Routes
+app.use('/api/auth', authRouter); // Mount the auth routes
 
 // Basic HTTP routes
 app.get('/health', (req, res) => {
