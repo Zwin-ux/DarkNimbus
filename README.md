@@ -1,39 +1,92 @@
-# Nimbus8: Unified Mod & Community Toolkit
+# Nimbus8: Unified Gaming & Community Platform
 
-Nimbus8 provides a seamless platform for Twitch streamers and Discord community managers to moderate, communicate, and overlay events across both platforms.
+Nimbus8 provides seamless integration between gaming platforms and social/streaming services, starting with Discord, Twitch, and now Minecraft Bedrock Edition. Our platform enables players to connect, communicate, and collaborate across platforms with enhanced social features.
 
-##  Features/Goals
+## Features/Goals
 
+### Core Features
 - **Unified Chat**: Merge Twitch and Discord chats into a single, real-time feed
 - **Cross-Platform Moderation**: Moderate both Twitch and Discord from one dashboard
 - **Role Sync**: Automatically sync Twitch subscriber status with Discord roles
 - **Real-time Alerts**: Get notified of events across platforms in real-time
 - **Customizable Overlays**: Add interactive overlays to your stream
 
+### Minecraft Bedrock Integration (New!)
+- **Account Linking**: Connect your Minecraft and Discord accounts with secure OAuth2 flow
+- **Rich Presence**: Show your Minecraft activity on Discord (game mode, server, etc.)
+- **Cross-Platform Invites**: Invite Discord friends to your Minecraft game with one click
+- **Voice & Text Chat**: Seamless communication between Minecraft and Discord (Coming in V2)
+- **Friend List Integration**: See your Discord friends who are playing Minecraft (Coming in V2)
+
 ## 🛠 Tech Stack
 
 - **Frontend**: React, Material-UI, WebSocket
 - **Backend**: Node.js, Express
 - **Twitch Integration**: tmi.js
-- **Discord Integration**: discord.js
-- **Real-time**: WebSockets for live updates
+- **Discord Integration**: discord.js, Discord Game SDK
+- **Minecraft Integration**: Bedrock Addon API, External Bridge Server
+- **Real-time**: WebSockets, Discord RPC
 - **Database**: SQLite (for user data and settings)
+- **Security**: OAuth2, Encrypted Token Storage
 
 ## 📦 Project Structure
 
 - `DiscordSocialSDKWrapper/` — C++ microservice wrapping Discord Game SDK
 - `TwitchIntegration/` — Node.js service for Twitch chat/mod/whisper integration
+- `MinecraftBridge/` — Service connecting Minecraft Bedrock to Discord (New!)
 - `ApiGateway/` — Node.js API Gateway for unified OAuth, REST, and WebSocket endpoints
 - `OverlayFrontend/` — React app for mod dashboard and real-time overlays
+- `BedrockAddon/` — Minecraft Bedrock addon for in-game integration (New!)
+
+## 🎮 Minecraft Bedrock Integration
+
+### Key Features
+
+1. **Account Linking**
+   - Secure OAuth2 flow for connecting Minecraft and Discord accounts
+   - Optional automatic account creation for seamless onboarding
+
+2. **Rich Presence**
+   - Shows current game activity in Discord
+   - Customizable server information display
+   - Real-time status updates
+
+3. **Cross-Platform Invites**
+   - One-click join links from Discord to Minecraft
+   - Deep linking support for direct server joining
+   - Server availability indicators
+
+4. **Voice & Text Chat (Coming in V2)**
+   - In-game Discord voice channels
+   - Proximity-based voice chat
+   - Cross-platform text messaging
+
+### Setup Instructions
+
+1. **Enable Developer Mode in Minecraft Bedrock**
+   - Go to Settings > Profile
+   - Enable "Developer Mode" and "Allow Server Textures"
+
+2. **Configure Minecraft Bridge**
+   - Navigate to `MinecraftBridge` directory
+   - Copy `.env.example` to `.env`
+   - Add your Discord bot token and OAuth2 credentials
+
+3. **Install the Bedrock Addon**
+   - Locate your Minecraft behavior packs folder
+   - Copy the contents of `BedrockAddon` to a new folder in the behavior packs directory
+   - Enable the pack in your Minecraft world settings
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 16+
+- Node.js 18+
 - npm or yarn
 - Twitch Developer Account
 - Discord Bot Token
+- Minecraft Bedrock Edition (for testing)
+- Discord Developer Application (for OAuth2)
 
 ### Setup
 
